@@ -1257,6 +1257,7 @@ async function submitToAC(email, fname, fields){
   fd.append('email', email);
   fd.append('fullname', fname);
   Object.entries(fields).forEach(([k,v])=>fd.append(k,String(v)));
+  fd.append('field[%TAGS%]', 'numerology-subscriber');
   try { await fetch(CFG.AC_URL, {method:'POST',body:fd,mode:'no-cors'}); } catch(e){}
 }
 

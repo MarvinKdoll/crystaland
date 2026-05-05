@@ -1287,6 +1287,7 @@ document.getElementById('hd-email-form').addEventListener('submit',async functio
     fd.append('field[HD_AUTHORITY]',chart.authority||'');
     fd.append('field[HD_PROFILE]',chart.profile||'');
     fd.append('field[REPORT_SOURCE]','human-design-tool');
+    fd.append('field[%TAGS%]','hd-subscriber');
     try{await fetch(HD_CFG.AC_URL,{method:'POST',body:fd,mode:'no-cors'});}catch(err){}
   }
 
