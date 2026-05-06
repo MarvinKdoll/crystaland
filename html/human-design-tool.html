@@ -1282,10 +1282,9 @@ document.getElementById('hd-email-form').addEventListener('submit',async functio
     fd.append('u',HD_CFG.AC_FORM_ID);fd.append('f',HD_CFG.AC_FORM_ID);
     fd.append('s','');fd.append('c','0');fd.append('m','0');fd.append('act','sub');fd.append('v','2');
     fd.append('email',email);fd.append('fullname',fname);
-    fd.append('field[HD_TYPE]',chart.type);
-    fd.append('field[HD_STRATEGY]',chart.strategy||'');
-    fd.append('field[HD_AUTHORITY]',chart.authority||'');
-    fd.append('field[HD_PROFILE]',chart.profile||'');
+    fd.append('field[14]',chart.type||'');
+    fd.append('field[15]',chart.profile||'');
+    fd.append('field[16]',chart.authority||'');
     fd.append('field[REPORT_SOURCE]','human-design-tool');
     fd.append('field[%TAGS%]','hd-subscriber');
     try{await fetch(HD_CFG.AC_URL,{method:'POST',body:fd,mode:'no-cors'});}catch(err){}
