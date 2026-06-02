@@ -189,14 +189,38 @@ def email_body(name: str, tier: str) -> str:
 
 # ── Webhook Routes ────────────────────────────────────────────────
 def extract_customer(payload: dict) -> tuple[str, str]:
-    """Extract email and name from Kajabi webhook payload."""
-    # Kajabi sends purchase webhooks with 'customer' or 'member' object
+    """Extract email and name from Kajabi or AC webhook payload."""
+    # Try Kajabi format: customer/member object
     customer = payload.get("customer") or payload.get("member") or {}
     email = (customer.get("email") or payload.get("email") or "").strip().lower()
     first = customer.get("first_name") or payload.get("first_name") or ""
     last  = customer.get("last_name")  or payload.get("last_name")  or ""
     name  = f"{first} {last}".strip() or customer.get("name") or payload.get("name") or ""
+    # Try AC format: contact[email], contact[first_name]
+    if not email:
+        email = (payload.get("contact[email]") or payload.get("contact_email") or "").strip().lower()
+    if not name:
+        f2 = payload.get("contact[first_name]") or payload.get("contact_first_name") or ""
+        l2 = payload.get("contact[last_name]")  or payload.get("contact_last_name")  or ""
+        name = f"{f2} {l2}".strip()
     return email, name
+
+
+def parse_request_data() -> dict:
+    """Parse incoming request as JSON or form data — handle AC and Kajabi formats."""
+    # Try JSON first (silent — don't raise on empty/invalid body)
+    payload = request.get_json(force=True, silent=True) or {}
+    if not payload:
+        # Fall back to form data (AC sends form-encoded webhooks)
+        payload = dict(request.form) or {}
+        # Flatten single-value lists from form data
+        payload = {k: v[0] if isinstance(v, list) and len(v) == 1 else v
+                   for k, v in payload.items()}
+    if not payload:
+        # Last resort: try raw body as query string
+        raw = request.data.decode("utf-8", errors="ignore")
+        log.info(f"Raw webhook body: {raw[:500]}")
+    return payload
 
 
 @app.route("/health", methods=["GET"])
@@ -206,9 +230,9 @@ def health():
 
 @app.route("/webhook/33page", methods=["POST"])
 def webhook_33page():
-    """Kajabi purchase webhook for 33-page $47 report."""
+    """AC/Kajabi purchase webhook for 33-page $47 report."""
     try:
-        payload = request.get_json(force=True) or {}
+        payload = parse_request_data()
         email, name = extract_customer(payload)
         if not email:
             return jsonify({"error": "No email in payload"}), 400
@@ -226,9 +250,9 @@ def webhook_33page():
 
 @app.route("/webhook/77page", methods=["POST"])
 def webhook_77page():
-    """Kajabi purchase webhook for 77-page $97 report."""
+    """AC/Kajabi purchase webhook for 77-page $97 report."""
     try:
-        payload = request.get_json(force=True) or {}
+        payload = parse_request_data()
         email, name = extract_customer(payload)
         if not email:
             return jsonify({"error": "No email in payload"}), 400
@@ -248,7 +272,7 @@ def webhook_77page():
 def webhook_free():
     """Optional: trigger free report delivery via webhook."""
     try:
-        payload = request.get_json(force=True) or {}
+        payload = parse_request_data()
         email, name = extract_customer(payload)
         if not email:
             return jsonify({"error": "No email in payload"}), 400
